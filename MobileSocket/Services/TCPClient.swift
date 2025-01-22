@@ -37,7 +37,7 @@ class TCPNetworkService: NSObject {
     lazy var connection: NWConnection = {
         // Create the connection
         //        Utils.printLog("Before Creating connection Host Address: \(CommonDefine.hostAddress), port is \(CommonDefine.ipPort)", logtype: .Debug)
-        let connection = NWConnection(host: NWEndpoint.Host(CommonDefine.hostAddress), port: NWEndpoint.Port("\(CommonDefine.ipPort)") ?? 0000, using: self.parames)
+        let connection = NWConnection(host: NWEndpoint.Host(CommonDefine.shared.hostAddress), port: NWEndpoint.Port("\(CommonDefine.shared.ipPort)") ?? 0000, using: self.parames)
         connection.stateUpdateHandler = self.listenStateUpdate(to:)
         connection.pathUpdateHandler = self.updateTcpMonitoring(to:)
         return connection
@@ -74,8 +74,9 @@ class TCPNetworkService: NSObject {
         return options
     }()
     
-    let queue = DispatchQueue(label: CommonDefine.hostAddress, qos: .background,attributes: [], autoreleaseFrequency: .workItem)//DispatchQueue(label: CommonDefine.hostAddress, attributes: .concurrent)
+    let queue = DispatchQueue(label: CommonDefine.shared.hostAddress, qos: .background,attributes: [], autoreleaseFrequency: .workItem)//DispatchQueue(label: CommonDefine.shared.hostAddress, attributes: .concurrent)
     let serialQueue = DispatchQueue(label: "com.queue.serial", attributes: .concurrent)
+    let streamQueue = DispatchQueue(label: "com.example.streamManager.queue")
     
     private func listenStateUpdate(to state: NWConnection.State) {
         // Set the state update handler
@@ -86,7 +87,7 @@ class TCPNetworkService: NSObject {
             break
             // init state
         case .waiting(let error):
-            Logger.shared.writeLog(.error, "Tcp connection waiting for server:\(CommonDefine.hostAddress), port: \(CommonDefine.ipPort) with this error: \(error)")
+            Logger.shared.writeLog(.error, "Tcp connection waiting for server:\(CommonDefine.shared.hostAddress), port: \(CommonDefine.shared.ipPort) with this error: \(error)")
             self.delegate?.TcpConnectionState(state: "Disconnected")
             break
         case .preparing:
@@ -95,23 +96,23 @@ class TCPNetworkService: NSObject {
             //            Utils.printLog("Tcp connection preparing", logtype: .Debug)
         case .ready:
             Logger.shared.writeLog(.info, "The connection is established, and ready to send and receive data.")
-            Logger.shared.writeLog(.info,"Connection Success with \(CommonDefine.hostAddress) \(CommonDefine.ipPort)")
+            Logger.shared.writeLog(.info,"Connection Success with \(CommonDefine.shared.hostAddress) \(CommonDefine.shared.ipPort)")
             self.receiveData()
             self.delegate?.TcpConnectionState(state: "Connected")
             //            self.sendHeartbeat()
         case .failed(let error):
             self.delegate?.TcpConnectionState(state: "Disconnected")
-            print("TCP failed: The connection has disconnected or encountered server:\(CommonDefine.hostAddress), port: \(CommonDefine.ipPort) with this error: \(error)")
+            print("TCP failed: The connection has disconnected or encountered server:\(CommonDefine.shared.hostAddress), port: \(CommonDefine.shared.ipPort) with this error: \(error)")
             
             if error.localizedDescription.contains("Network is down") {
-                self.delegate?.handleErrors(error: CommonDefine.strNoNetworkMsg)
+                self.delegate?.handleErrors(error: CommonDefine.shared.strNoNetworkMsg)
             } else {
-                self.delegate?.handleErrors(error: CommonDefine.strDefaultConnErrorMsg)
+                self.delegate?.handleErrors(error: CommonDefine.shared.strDefaultConnErrorMsg)
             }
         case .cancelled:
             self.delegate?.TcpConnectionState(state: "Cancelled")
             Logger.shared.writeLog(.debug, "The connection has been canceled.")
-            delegate?.handleErrors(error: CommonDefine.strDefaultConnErrorMsg)
+            delegate?.handleErrors(error: CommonDefine.shared.strDefaultConnErrorMsg)
         default:
             Logger.shared.writeLog(.debug, "listenStateUpdate Default state.")
             break
@@ -157,40 +158,52 @@ class TCPNetworkService: NSObject {
     func connect() {
         // Start the connection
         self.connection.start(queue: queue)
-        Stream.getStreamsToHost(withName: CommonDefine.hostAddress, port: CommonDefine.ipPort, inputStream: &self.inputStream, outputStream: &self.outputStream)
-        
-        inputDelegate = self
-        outputDelegate = self
-        if let input = inputStream, let outPut = outputStream {
-            input.delegate = inputDelegate
-            outPut.delegate = outputDelegate
+        streamQueue.async { [weak self] in
+            guard let self = self else { return }
+            Stream.getStreamsToHost(withName: CommonDefine.shared.hostAddress, port: CommonDefine.shared.ipPort, inputStream: &self.inputStream, outputStream: &self.outputStream)
             
-            input.schedule(in: .current, forMode: RunLoop.Mode.common)
-            outPut.schedule(in: .current, forMode: RunLoop.Mode.common)
-            
-            let sslSettings = [
-                NSString(format: kCFStreamPropertySocketSecurityLevel): kCFStreamSocketSecurityLevelNegotiatedSSL,
-                NSString(format: kCFStreamSSLValidatesCertificateChain): kCFBooleanFalse as Any,
-                //                    NSString(format: kCFStreamSSLPeerName): CommonDefine.hostAddress,
-                //                    NSString(format: kCFStreamSSLCertificates): certs,
-                NSString(format: kCFStreamSSLIsServer): kCFBooleanFalse as Any
-            ] as [NSString : Any]
-            
-            if isSSLON {
-                // Enable SSL/TLS on the streams
-                input.setProperty(kCFStreamSocketSecurityLevelNegotiatedSSL, forKey: Stream.PropertyKey.socketSecurityLevelKey)
-                outPut.setProperty(kCFStreamSocketSecurityLevelNegotiatedSSL, forKey: Stream.PropertyKey.socketSecurityLevelKey)
+            self.inputDelegate = self
+            self.outputDelegate = self
+            if let input = inputStream, let outPut = outputStream {
+                input.delegate = inputDelegate
+                outPut.delegate = outputDelegate
                 
-                input.setProperty(sslSettings, forKey:  kCFStreamPropertySSLSettings as Stream.PropertyKey)
-                outPut.setProperty(sslSettings, forKey: kCFStreamPropertySSLSettings as Stream.PropertyKey)
+                input.schedule(in: .current, forMode: RunLoop.Mode.default)
+                outPut.schedule(in: .current, forMode: RunLoop.Mode.default)
+                
+                let sslSettings = [
+                    NSString(format: kCFStreamPropertySocketSecurityLevel): kCFStreamSocketSecurityLevelNegotiatedSSL,
+                    NSString(format: kCFStreamSSLValidatesCertificateChain): kCFBooleanFalse as Any,
+                    //                    NSString(format: kCFStreamSSLPeerName): CommonDefine.hostAddress,
+                    //                    NSString(format: kCFStreamSSLCertificates): certs,
+                    NSString(format: kCFStreamSSLIsServer): kCFBooleanFalse as Any
+                ] as [NSString : Any]
+                
+                if isSSLON {
+                    // Enable SSL/TLS on the streams
+                    input.setProperty(kCFStreamSocketSecurityLevelNegotiatedSSL, forKey: Stream.PropertyKey.socketSecurityLevelKey)
+                    outPut.setProperty(kCFStreamSocketSecurityLevelNegotiatedSSL, forKey: Stream.PropertyKey.socketSecurityLevelKey)
+                    
+                    input.setProperty(sslSettings, forKey:  kCFStreamPropertySSLSettings as Stream.PropertyKey)
+                    outPut.setProperty(sslSettings, forKey: kCFStreamPropertySSLSettings as Stream.PropertyKey)
+                }
+                Logger.shared.writeLog(.info, "isSSLON: \(isSSLON)")
+                input.open()
+                outPut.open()
+            } else {
+                print("input and output stream is not found.")
             }
-            Logger.shared.writeLog(.info, "isSSLON: \(isSSLON)")
-            input.open()
-            outPut.open()
-        } else {
-            print("input and output stream is not found.")
         }
     }
+    
+    func closeStreams() {
+          streamQueue.async { [weak self] in
+              self?.inputStream?.close()
+              self?.outputStream?.close()
+              self?.inputStream = nil
+              self?.outputStream = nil
+          }
+      }
     
     private func receiveData() {
         self.connection.receive(minimumIncompleteLength: 1, maximumLength: 8192) { [weak self] (data, context, isComplete, error) in

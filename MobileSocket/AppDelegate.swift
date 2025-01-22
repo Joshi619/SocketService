@@ -13,8 +13,14 @@ import SwiftUI
 class AppDelegate: NSObject, NSApplicationDelegate {
     var mainWindow: NSWindow?
     var statusItem: NSStatusItem?
+    var connectionItem: NSMenuItem?
+    static let shared = AppDelegate()
     
     func applicationDidFinishLaunching(_ notification: Notification) {
+        ["File","Edit", "View", "Help", "Window"].forEach { name in
+            NSApp.mainMenu?.item(withTitle: name).map { NSApp.mainMenu?.removeItem($0) }
+        }
+        
         let arguments = CommandLine.arguments
 
         // Check if the app is launched in CLI mode
@@ -28,15 +34,6 @@ class AppDelegate: NSObject, NSApplicationDelegate {
                 button.action = #selector(statusBarButtonClicked)
             }
             print("Launching GUI...")
-            mainWindow = NSWindow(
-                        contentRect: NSRect(x: 0, y: 0, width: 800, height: 600),
-                        styleMask: [.titled, .closable, .resizable, .miniaturizable],
-                        backing: .buffered,
-                        defer: false
-                    )
-            mainWindow?.title = "MobileSocket"
-            mainWindow?.contentView = NSHostingView(rootView: HomeView()) // Assign SwiftUI view
-            mainWindow?.makeKeyAndOrderFront(nil)
             
         }
     }
@@ -62,14 +59,28 @@ class AppDelegate: NSObject, NSApplicationDelegate {
             print("Unknown command. Use --help for available options.")
         }
     }
+    
+    // MARK: - Intial setup and configuration
+    
+    private func setupInitialSetup() {
+        if UserDefaults.standard.bool(forKey: UserDefaultKeys.isConfigured) == false {
+            showDockIcon()
+        } else {
+            hideDockIcon()
+        }
+    }
 }
 
 extension AppDelegate {
     @objc func statusBarButtonClicked() {
         let menu = NSMenu()
-        menu.addItem(NSMenuItem(title: "Check for update", action: #selector(option1Selected), keyEquivalent: ""))
-        menu.addItem(NSMenuItem(title: "Show App", action: #selector(showApp), keyEquivalent: "s"))
-        menu.addItem(NSMenuItem(title: "Status: \(CommonDefine.appState.title)", action: nil, keyEquivalent: ""))
+        menu.addItem(NSMenuItem(title: "Stop", action: #selector(option1Selected), keyEquivalent: ""))
+        menu.addItem(NSMenuItem(title: "Restart", action: #selector(option1Selected), keyEquivalent: ""))
+        menu.addItem(NSMenuItem(title: "Reconfiguration", action: #selector(showApp), keyEquivalent: ""))
+        connectionItem = NSMenuItem(title: "Status: \(CommonDefine.shared.appState.title)", action: nil, keyEquivalent: "")
+        if let item = connectionItem {
+            menu.addItem(item)
+        }
         menu.addItem(NSMenuItem.separator())
         menu.addItem(NSMenuItem(title: "Quit", action: #selector(quit), keyEquivalent: "q"))
         statusItem?.menu = menu
@@ -81,11 +92,30 @@ extension AppDelegate {
     
     @objc func showApp() {
         // Show the main window when the user selects "Show App"
-        mainWindow?.makeKeyAndOrderFront(nil)
-        NSApp.activate(ignoringOtherApps: true)
+        Utility.shared.requestAdminAccess { status in
+            if status {
+                self.showDockIcon()
+                NSApp.activate(ignoringOtherApps: true)
+            }
+        }
+        
     }
     
     @objc func quit() {
         NSApplication.shared.terminate(self)
+    }
+    
+    func hideDockIcon() {
+        // Hide the app from Dock and app switcher
+        NSApp.setActivationPolicy(.prohibited)
+    }
+    
+    func updateStatus() {
+        connectionItem?.title = CommonDefine.shared.appState.title
+    }
+    
+    func showDockIcon() {
+        // Show the app in Dock and app switcher
+        NSApp.setActivationPolicy(.regular)
     }
 }

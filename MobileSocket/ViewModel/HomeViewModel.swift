@@ -21,13 +21,41 @@ class HomeViewModel: ObservableObject {
     @Published var showErrorAlert = false
     
     func startConnection() {
-        CommonDefine.hostAddress = host
-        CommonDefine.ipPort = Int(port) ?? 8080
+        CommonDefine.shared.hostAddress = host
+        CommonDefine.shared.ipPort = Int(port) ?? 8080
         queue.maxConcurrentOperationCount = 1
         tcpNetwork = TCPNetworkService()
         tcpNetwork?.delegate = self
         tcpNetwork?.connect()
 
+    }
+    
+    func intialSetup() {
+        guard let networkRechablity = Reachability(hostname: "www.google.com") else {
+            return
+        }
+        do {
+            try networkRechablity.startNotifier()
+        } catch {
+            Logger.shared.writeLog(.error, "NetworkRechability: \(error.localizedDescription)")
+        }
+        
+        networkRechablity.whenReachable = { reachability in
+            Logger.shared.writeLog(.info, "NetworkRechability whenReachable")
+            if CommonDefine.shared.appState != .connected && UserDefaults.standard.bool(forKey: UserDefaultKeys.isConfigured) == true {
+                self.startConnection()
+            }
+        }
+        
+        networkRechablity.whenUnreachable = { reachability in
+            Logger.shared.writeLog(.warning, "NetworkRechability whenUnreachable")
+            CommonDefine.shared.appState = .disconnected
+            self.tcpNetwork?.closeStreams()
+            self.errorMessage = CommonDefine.shared.strNoNetworkMsg
+            self.showErrorAlert.toggle()
+        }
+        
+        
     }
     
 //    func keepAlive() {
@@ -68,26 +96,20 @@ extension HomeViewModel: TCPConnectionDelegate {
             switch state {
             case "Connected":
                 self.connectionStatus = .connected
-                CommonDefine.appState = .connected
-//                self.register()
-//                self.makeTimerForGRAStatusEPM()
+                CommonDefine.shared.appState = .connected
+                AppDelegate.shared.hideDockIcon()
             case "Disconnected":
-                self.connectionStatus = .notConnected
-                CommonDefine.appState = .notConnected
-//                self.retriveConfiguration()
-//                if self.isAlreadyConfigured() == true && self.allPermissionGranted == true {
-//                    if self.sessionId != "" {
-//                        self.registerClientAuth(registerId: self.sessionId)
-//                    }
-//                }
+                self.connectionStatus = .disconnected
+                CommonDefine.shared.appState = .disconnected
             case "Waiting":
                 self.connectionStatus = .conencting
-                CommonDefine.appState = .conencting
+                CommonDefine.shared.appState = .conencting
             default:
                 self.connectionStatus = .conencting
-                CommonDefine.appState = .conencting
+                CommonDefine.shared.appState = .conencting
             }
             Logger.shared.writeLog(.debug, "connectionState: \(state)")
+            AppDelegate.shared.updateStatus()
         }
     }
     

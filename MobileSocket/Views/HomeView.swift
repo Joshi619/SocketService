@@ -40,15 +40,19 @@ struct HomeView: View {
         }
         .padding()
         .onChange(of: viewModel.host) { oldValue, newValue in
-            CommonDefine.hostAddress = newValue
+            CommonDefine.shared.hostAddress = newValue
         }
         .onChange(of: viewModel.port) { oldValue, newValue in
-            CommonDefine.ipPort = Int(newValue) ?? 0
+            CommonDefine.shared.ipPort = Int(newValue) ?? 0
         }
         .onChange(of: viewModel.showErrorAlert, { oldValue, newValue in
             showAlert = newValue
         })
+        .onAppear(perform: {
+            viewModel.intialSetup()
+        })
         .modifier(ToastModifier(isShowing: $showAlert, message: viewModel.errorMessage, duration: 2.0))
+        
     }
 }
 

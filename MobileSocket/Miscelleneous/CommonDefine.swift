@@ -11,54 +11,52 @@ import Foundation
 #else
     import UIKit
 #endif
+import Combine
 
 /// this class will have the const and non const value required throughout the project
 class CommonDefine {
+    
+    static let shared = CommonDefine()
     /// Host address
-    public static var hostAddress = ""
+    var hostAddress = ""
     
     /// port number
-    public static var ipPort = 0//8585
+    var ipPort = 0//8585
     
     /// App name string
-    public static let appName = "Mobile Socket"
+    let appName = "Mobile Socket"
     
     /// TCP connection state
-    public static var appState = ConnectionType.conencting
+    @Published var appState = ConnectionType.conencting
     
-    
-    /// Contain per session logs.
-    public static var sessionLogList = [String]()
 
     // Display Size
     #if os(macOS)
-    public static let screenWidth = Int(NSScreen.main?.frame.width ?? 0.0)
-    public static let screenHeight = Int(NSScreen.main?.frame.height ?? 0.0)
+    let screenWidth = Int(NSScreen.main?.frame.width ?? 0.0)
+    let screenHeight = Int(NSScreen.main?.frame.height ?? 0.0)
     #else
-    public static let screenWidth = Int(UIScreen.main.bounds.width)
-    public static let screenHeight = Int(UIScreen.main.bounds.height)
+    let screenWidth = Int(UIScreen.main.bounds.width)
+    let screenHeight = Int(UIScreen.main.bounds.height)
     #endif
         
     // MARK: - DialogMessages
-    public static let strSessionExitWarn = "You have requested for remote support. If you exit the application, remote support will not be possible. Are you sure you want to exit?";
-    public static let strReconnectPromptMsg = "You have been disconnected from the server. Would you like to reconnect?"
-    public static let strReqSupportFailedMsg = "Error while trying to create support request."
-    public static let strRegFailedMsg = "Error while registering with server."
-    public static let strDisConnMsg = "Disconnected from server."
-    public static let strConnectionTimedOut = "Lost connection to server. Keep alive packets not received in time"
-    public static let strNoNetworkMsg = "Unable to connect to server. Please check your internet connection or try again later."
-    public static let strSessionExpiredMsg = "Your previous session has expired. Please register a new request."
-    public static let strDefaultConnErrorMsg = "Unable to connect to server."
-    public static let strAPIConnErrorMsg = "Unable to connect to the API server."
-    public static let strAuthErrorMsg = "Client authentication failure."
-    public static let strNoConfigErrorMsg = "No config found."
-    public static let strConfigRespErrorMsg = "Unable to get config from server.Server responded with status "
-    public static let strAuthRespErrorMsg = "Unable to get token from server.Server responded with status "
-    public static let strLocalConfErrorMsg = "Error in getting local configuration."
-    public static let strLocalConfUpdateErrorMsg = "Error in updating local configuration."
-    public static let streamErrorMessage = "Unknown Error. Kindly, contact ARCON GRA Administrator."
+    let strReconnectPromptMsg = "You have been disconnected from the server. Would you like to reconnect?"
+    let strReqSupportFailedMsg = "Error while trying to create support request."
+    let strRegFailedMsg = "Error while registering with server."
+    let strDisConnMsg = "Disconnected from server."
+    let strConnectionTimedOut = "Lost connection to server. Keep alive packets not received in time"
+    let strNoNetworkMsg = "Unable to connect to server. Please check your internet connection or try again later."
+    let strDefaultConnErrorMsg = "Unable to connect to server."
+    let strAPIConnErrorMsg = "Unable to connect to the API server."
+    let strAuthErrorMsg = "Client authentication failure."
+    let strNoConfigErrorMsg = "No config found."
+    let strConfigRespErrorMsg = "Unable to get config from server.Server responded with status "
+    let strLocalConfErrorMsg = "Error in getting local configuration."
+    let strLocalConfUpdateErrorMsg = "Error in updating local configuration."
+    let streamErrorMessage = "Unknown Error. Kindly, contact MobileSocket Administrator."
+    
     // MARK: - API Handler Message
-    public static let invalidTokenMessage = "Invalid token in request"
+    let invalidTokenMessage = "Invalid token in request"
 }
 
 struct UserDefaultKeys {

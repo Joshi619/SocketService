@@ -33,7 +33,7 @@ class Logger: NSObject {
     static let shared = Logger()
     
     
-    func writeLog(_ logType: LogType,_ message: String, FileName: String = "\(CommonDefine.appName)_log") {
+    func writeLog(_ logType: LogType,_ message: String, FileName: String = "\(CommonDefine.shared.appName)_log") {
         let fileManager = FileManager.default
         let containerURL = fileManager.homeDirectoryForCurrentUser//containerURL(forSecurityApplicationGroupIdentifier: Constant.groupIdentifier)!
         
