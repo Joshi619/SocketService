@@ -6,11 +6,13 @@
 //
 
 import SwiftUI
+import AlertToast
 
 struct HomeView: View {
     
-    @StateObject var viewModel = HomeViewModel()
-    @State var showAlert: Bool = false
+    @StateObject var viewModel: HomeViewModel
+    @State var successAlert: Bool = false
+    @State var errorAlert: Bool = false
     
     var body: some View {
         VStack(alignment: .center,spacing: 20) {
@@ -31,8 +33,7 @@ struct HomeView: View {
                 TextField("Enter Port Number", text: $viewModel.port)
                 
                 Button(action: {
-                    viewModel.connectionStatus = nil
-                    viewModel.startConnection()
+                    viewModel.validationForConnection()
                 }) {
                     Text("Connect")
                 }.disabled(viewModel.connectionStatus == .connected ? true: false)
@@ -45,17 +46,45 @@ struct HomeView: View {
         .onChange(of: viewModel.port) { oldValue, newValue in
             CommonDefine.shared.ipPort = Int(newValue) ?? 0
         }
+        .onChange(of: viewModel.showSuccessAlert, { oldValue, newValue in
+            successAlert = newValue
+        })
         .onChange(of: viewModel.showErrorAlert, { oldValue, newValue in
-            showAlert = newValue
+            errorAlert = newValue
+        })
+        .onDisappear(perform: {
+//            AppDelegate.shared.hideDockIcon()
         })
         .onAppear(perform: {
             viewModel.intialSetup()
         })
-        .modifier(ToastModifier(isShowing: $showAlert, message: viewModel.errorMessage, duration: 2.0))
+        .toast(isPresenting: $successAlert){
+            switch viewModel.alertType {
+            case .alert:
+                // `.alert` is the default displayMode
+                AlertToast(type: .regular, title: "Message Sent!")
+            case .hudProgress:
+                //Choose .hud to toast alert from the top of the screen
+                AlertToast(displayMode: .hud, type: .regular, title: "Message Sent!")
+            case .banner, .side:
+                //Choose .banner to slide/pop alert from the bottom of the screen
+                AlertToast(displayMode: .banner(.slide), type: .regular, title: "Message Sent!")
+            }
+        }
+        .toast(isPresenting: $errorAlert){
+            switch viewModel.alertType {
+            case .alert:
+                AlertToast(displayMode: .alert, type: .error(Color.red), title: viewModel.errorMessage)
+            case .hudProgress:
+                AlertToast(displayMode: .hud, type: .error(Color.red), title: viewModel.errorMessage)
+            case .banner, .side:
+                AlertToast(displayMode: .banner(.slide), type: .error(Color.red), title: viewModel.errorMessage)
+            }
+        }
         
     }
 }
 
 #Preview {
-    HomeView()
+    HomeView(viewModel: HomeViewModel())
 }

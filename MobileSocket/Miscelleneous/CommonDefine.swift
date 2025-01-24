@@ -19,7 +19,7 @@ class CommonDefine {
     static let shared = CommonDefine()
     /// Host address
     var hostAddress = ""
-    
+    var isCurrentUserAdmin = false
     /// port number
     var ipPort = 0//8585
     
@@ -54,7 +54,10 @@ class CommonDefine {
     let strLocalConfErrorMsg = "Error in getting local configuration."
     let strLocalConfUpdateErrorMsg = "Error in updating local configuration."
     let streamErrorMessage = "Unknown Error. Kindly, contact MobileSocket Administrator."
-    
+    let hostEmptyMsg = "Host name cannot be empty."
+    let ipEmptyMsg = "IP address cannot be empty."
+    let configureSuccess = "server configured successfully"
+
     // MARK: - API Handler Message
     let invalidTokenMessage = "Invalid token in request"
 }

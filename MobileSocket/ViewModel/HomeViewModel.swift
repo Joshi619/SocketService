@@ -18,7 +18,22 @@ class HomeViewModel: ObservableObject {
     let queue = OperationQueue()
     var tcpNetwork: TCPNetworkService?
     @Published var errorMessage = ""
+    @Published var successMessage = ""
     @Published var showErrorAlert = false
+    @Published var showSuccessAlert = false
+    var alertType: SocketAlertType = .banner
+    
+    enum SocketAlertType {
+        case banner
+        case alert
+        case side
+        case hudProgress
+    }
+    
+    enum SocketResult {
+        case success
+        case failure
+    }
     
     func startConnection() {
         CommonDefine.shared.hostAddress = host
@@ -28,6 +43,11 @@ class HomeViewModel: ObservableObject {
         tcpNetwork?.delegate = self
         tcpNetwork?.connect()
 
+    }
+    
+    func stopConnection() {
+        tcpNetwork?.close()
+        tcpNetwork = nil
     }
     
     func intialSetup() {
@@ -54,8 +74,19 @@ class HomeViewModel: ObservableObject {
             self.errorMessage = CommonDefine.shared.strNoNetworkMsg
             self.showErrorAlert.toggle()
         }
-        
-        
+    }
+    
+    func validationForConnection() {
+        if host.isEmpty {
+            showErrorAlert = true
+            errorMessage = CommonDefine.shared.hostEmptyMsg
+        } else if port.isEmpty {
+            showErrorAlert = true
+            errorMessage = CommonDefine.shared.ipEmptyMsg
+        } else {
+            connectionStatus = .conencting
+            startConnection()
+        }
     }
     
 //    func keepAlive() {
@@ -97,13 +128,18 @@ extension HomeViewModel: TCPConnectionDelegate {
             case "Connected":
                 self.connectionStatus = .connected
                 CommonDefine.shared.appState = .connected
-                AppDelegate.shared.hideDockIcon()
+                self.appNotification(message: CommonDefine.shared.configureSuccess, alertType: .alert, result: .success)
+//                DispatchQueue.main.asyncAfter(deadline: .now() + 2, execute: {
+//                    AppDelegate.shared.hideDockIcon()
+//                })
             case "Disconnected":
                 self.connectionStatus = .disconnected
                 CommonDefine.shared.appState = .disconnected
+                self.appNotification(message: CommonDefine.shared.strDefaultConnErrorMsg, alertType: .alert, result: .failure)
             case "Waiting":
                 self.connectionStatus = .conencting
                 CommonDefine.shared.appState = .conencting
+                self.appNotification(message: CommonDefine.shared.strDefaultConnErrorMsg, alertType: .alert, result: .failure)
             default:
                 self.connectionStatus = .conencting
                 CommonDefine.shared.appState = .conencting
@@ -123,7 +159,31 @@ extension HomeViewModel: TCPConnectionDelegate {
     
     func handleErrors(error: String) {
         Logger.shared.writeLog(.error, "Handler Error: \(error)")
-        showErrorAlert.toggle()
-        errorMessage = error
+        DispatchQueue.main.async {
+            self.showErrorAlert = true
+            self.errorMessage = error
+            self.appNotification(message: error,alertType: .alert, result: .failure)
+        }
+    }
+    
+    func appNotification(message: String, alertType: SocketAlertType, result: SocketResult) {
+        if NSApplication.shared.isHidden {
+            if result == .failure {
+                LocalNotificationCenter.shared.sendLocalNotification(subtitle: "Error", body: message, completion: {_ in })
+            } else {
+                LocalNotificationCenter.shared.sendLocalNotification(subtitle: "Success", body: message, completion: {_ in })
+            }
+        } else {
+            DispatchQueue.main.async {
+                self.alertType = alertType
+                if result == .failure {
+                    self.errorMessage = message
+                    self.showErrorAlert = true
+                } else {
+                    self.successMessage = message
+                    self.showSuccessAlert = true
+                }
+            }
+        }
     }
 }

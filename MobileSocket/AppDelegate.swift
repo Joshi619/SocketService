@@ -11,7 +11,7 @@ import SwiftUI
 
 //@main
 class AppDelegate: NSObject, NSApplicationDelegate {
-    var mainWindow: NSWindow?
+    var viewModel = HomeViewModel()
     var statusItem: NSStatusItem?
     var connectionItem: NSMenuItem?
     static let shared = AppDelegate()
@@ -20,6 +20,9 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         ["File","Edit", "View", "Help", "Window"].forEach { name in
             NSApp.mainMenu?.item(withTitle: name).map { NSApp.mainMenu?.removeItem($0) }
         }
+        CommonDefine.shared.isCurrentUserAdmin = Utility.shared.isCurrentUserAdmin()
+        // notification permission
+        LocalNotificationCenter.shared.requestNotificationPermission()
         
         let arguments = CommandLine.arguments
 
@@ -37,6 +40,11 @@ class AppDelegate: NSObject, NSApplicationDelegate {
             
         }
     }
+    
+    func applicationShouldTerminateAfterLastWindowClosed(_ sender: NSApplication) -> Bool {
+            // Return false to keep the application alive
+            return false
+        }
 
     func runCLI(arguments: [String]) {
         // Handle CLI arguments
@@ -51,6 +59,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         } else if arguments.contains("--version") {
             print("MyApp version 1.0.0")
         } else if arguments.contains("--stop server") {
+            
         } else if arguments.contains("--start server") {
             
         } else if arguments.contains("--restart server") {
@@ -61,7 +70,6 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     }
     
     // MARK: - Intial setup and configuration
-    
     private func setupInitialSetup() {
         if UserDefaults.standard.bool(forKey: UserDefaultKeys.isConfigured) == false {
             showDockIcon()
@@ -72,10 +80,11 @@ class AppDelegate: NSObject, NSApplicationDelegate {
 }
 
 extension AppDelegate {
+    // MARK: - StatusBar Button Action
     @objc func statusBarButtonClicked() {
         let menu = NSMenu()
-        menu.addItem(NSMenuItem(title: "Stop", action: #selector(option1Selected), keyEquivalent: ""))
-        menu.addItem(NSMenuItem(title: "Restart", action: #selector(option1Selected), keyEquivalent: ""))
+        menu.addItem(NSMenuItem(title: "Stop", action: #selector(stopServiceAction), keyEquivalent: ""))
+        menu.addItem(NSMenuItem(title: "Restart", action: #selector(restartServiceAction), keyEquivalent: ""))
         menu.addItem(NSMenuItem(title: "Reconfiguration", action: #selector(showApp), keyEquivalent: ""))
         connectionItem = NSMenuItem(title: "Status: \(CommonDefine.shared.appState.title)", action: nil, keyEquivalent: "")
         if let item = connectionItem {
@@ -86,34 +95,72 @@ extension AppDelegate {
         statusItem?.menu = menu
     }
     
-    @objc func option1Selected() {
-        print("Option 1 selected")
+    // MARK: - Stop Service Action
+    @objc func stopServiceAction() {
+        if CommonDefine.shared.isCurrentUserAdmin {
+            
+        } else {
+            Utility.shared.requestAdminAccess { status in
+                if status {
+                    
+                }
+            }
+        }
+    }
+    
+    // MARK: - Restart Service Action
+    @objc func restartServiceAction() {
+        if CommonDefine.shared.isCurrentUserAdmin {
+            
+        } else {
+            Utility.shared.requestAdminAccess { status in
+                if status {
+                    
+                }
+            }
+        }
     }
     
     @objc func showApp() {
         // Show the main window when the user selects "Show App"
-        Utility.shared.requestAdminAccess { status in
-            if status {
-                self.showDockIcon()
-                NSApp.activate(ignoringOtherApps: true)
+        if CommonDefine.shared.isCurrentUserAdmin {
+            self.showDockIcon()
+            NSApp.activate(ignoringOtherApps: true)
+        } else {
+            Utility.shared.requestAdminAccess { status in
+                if status {
+                    self.showDockIcon()
+                    NSApp.activate(ignoringOtherApps: true)
+                }
             }
         }
-        
     }
     
+    // MARK: - Quite application
     @objc func quit() {
-        NSApplication.shared.terminate(self)
+        if CommonDefine.shared.isCurrentUserAdmin {
+            NSApplication.shared.terminate(self)
+        } else {
+            Utility.shared.requestAdminAccess { status in
+                if status {
+                    NSApplication.shared.terminate(self)
+                }
+            }
+        }
     }
     
+    // MARK: - Hide Dock Icon
     func hideDockIcon() {
         // Hide the app from Dock and app switcher
         NSApp.setActivationPolicy(.prohibited)
     }
     
+    // MARK: - Status updated of connectivity
     func updateStatus() {
         connectionItem?.title = CommonDefine.shared.appState.title
     }
     
+    // MARK: - Show Dock Icon
     func showDockIcon() {
         // Show the app in Dock and app switcher
         NSApp.setActivationPolicy(.regular)

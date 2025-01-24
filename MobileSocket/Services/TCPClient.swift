@@ -89,6 +89,7 @@ class TCPNetworkService: NSObject {
         case .waiting(let error):
             Logger.shared.writeLog(.error, "Tcp connection waiting for server:\(CommonDefine.shared.hostAddress), port: \(CommonDefine.shared.ipPort) with this error: \(error)")
             self.delegate?.TcpConnectionState(state: "Disconnected")
+            self.delegate?.handleErrors(error: CommonDefine.shared.strDefaultConnErrorMsg)
             break
         case .preparing:
             Logger.shared.writeLog(.debug, "Tcp connection in preparing State")

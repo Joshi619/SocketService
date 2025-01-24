@@ -12,7 +12,7 @@ struct MobileSocketApp: App {
     @NSApplicationDelegateAdaptor(AppDelegate.self) var appDelegate
     var body: some Scene {
         WindowGroup {
-            HomeView()
+            HomeView(viewModel: appDelegate.viewModel)
                 .frame(width: 400, height: 300)
         }
         .windowStyle(HiddenTitleBarWindowStyle())

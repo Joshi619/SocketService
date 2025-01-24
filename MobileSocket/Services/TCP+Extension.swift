@@ -80,6 +80,7 @@ extension TCPNetworkService: StreamDelegate {
             outputStr.close()
             outputStr.remove(from: .current, forMode: RunLoop.Mode.common)
         }
+        connection.cancel()
     }
     
     func openCompleted(stream: Stream){

@@ -7,6 +7,7 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		484BF80B2D43B0E4002E71AB /* AlertToast in Frameworks */ = {isa = PBXBuildFile; productRef = 484BF80A2D43B0E4002E71AB /* AlertToast */; };
 		486ABCB22D3F9E4300C2B97B /* ArgumentParser in Frameworks */ = {isa = PBXBuildFile; productRef = 486ABCB12D3F9E4300C2B97B /* ArgumentParser */; };
 		4891EF632D3E5405000C311A /* SocketConfig.txt in Sources */ = {isa = PBXBuildFile; fileRef = 4891EF622D3E5403000C311A /* SocketConfig.txt */; };
 /* End PBXBuildFile section */
@@ -43,6 +44,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				486ABCB22D3F9E4300C2B97B /* ArgumentParser in Frameworks */,
+				484BF80B2D43B0E4002E71AB /* AlertToast in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -87,6 +89,7 @@
 			name = MobileSocket;
 			packageProductDependencies = (
 				486ABCB12D3F9E4300C2B97B /* ArgumentParser */,
+				484BF80A2D43B0E4002E71AB /* AlertToast */,
 			);
 			productName = MobileSocket;
 			productReference = 4891EF142D3E5267000C311A /* MobileSocket.app */;
@@ -118,6 +121,7 @@
 			minimizedProjectReferenceProxies = 1;
 			packageReferences = (
 				486ABCB02D3F9E4300C2B97B /* XCRemoteSwiftPackageReference "swift-argument-parser" */,
+				484BF8092D43B0E4002E71AB /* XCRemoteSwiftPackageReference "AlertToast" */,
 			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = 4891EF152D3E5267000C311A /* Products */;
@@ -371,6 +375,14 @@
 /* End XCConfigurationList section */
 
 /* Begin XCRemoteSwiftPackageReference section */
+		484BF8092D43B0E4002E71AB /* XCRemoteSwiftPackageReference "AlertToast" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/elai950/AlertToast.git";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 1.3.9;
+			};
+		};
 		486ABCB02D3F9E4300C2B97B /* XCRemoteSwiftPackageReference "swift-argument-parser" */ = {
 			isa = XCRemoteSwiftPackageReference;
 			repositoryURL = "https://github.com/apple/swift-argument-parser.git";
@@ -382,6 +394,11 @@
 /* End XCRemoteSwiftPackageReference section */
 
 /* Begin XCSwiftPackageProductDependency section */
+		484BF80A2D43B0E4002E71AB /* AlertToast */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 484BF8092D43B0E4002E71AB /* XCRemoteSwiftPackageReference "AlertToast" */;
+			productName = AlertToast;
+		};
 		486ABCB12D3F9E4300C2B97B /* ArgumentParser */ = {
 			isa = XCSwiftPackageProductDependency;
 			package = 486ABCB02D3F9E4300C2B97B /* XCRemoteSwiftPackageReference "swift-argument-parser" */;
